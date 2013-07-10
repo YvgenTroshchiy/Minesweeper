@@ -5,14 +5,14 @@ public class Cell {
 	private int		surroundingMines	= 0;
 	private boolean	isMine				= false;
 	private boolean	isFlag				= false;
-	private boolean	isDisable			= false;
+	private boolean	enableForLongClick	= true;
 
 	public int getSurroundingMines() {
 		return surroundingMines;
 	}
 
-	public void setSurroundingMines(int surroundingMines) {
-		this.surroundingMines = surroundingMines;
+	public void incrementSurroundingMines() {
+		this.surroundingMines++;
 	}
 
 	public boolean isMine() {
@@ -31,12 +31,12 @@ public class Cell {
 		this.isFlag = isFlag;
 	}
 
-	public boolean isDisable() {
-		return isDisable;
+	public boolean isEnableForLongClick() {
+		return enableForLongClick;
 	}
 
-	public void setDisable(boolean isDisable) {
-		this.isDisable = isDisable;
+	public void enableForLongClick(boolean isDisable) {
+		this.enableForLongClick = isDisable;
 	}
 
 }

@@ -19,7 +19,8 @@
         
         <activity
             android:name=".bluetooth.MainActivity"
-            android:label="@string/app_name" >
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,7 +28,7 @@
             </intent-filter>
         </activity>
         
-        <activity android:name=".game.game_field" >
+        <activity android:name=".game.GameActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
