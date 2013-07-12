@@ -1,7 +1,9 @@
 package com.quver.miner.game;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -12,21 +14,25 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import com.quver.miner.R;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Random;
 
 public class GameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
 
-	private static final String	TAG			= "myLogs";
+	private static final String	TAG				= "GameActivity";
+
+	public static final int		VIBRATE_TIME	= 60;
 	//TODO make choose from list for count
 	private GridView			vMineField;
 
-	private int					mGridSize	= 8;
+	private int					mGridSize		= 8;
 	private int					mCellsCount;
 	private int					mMaxMinsCount;
 	private ArrayList<Cell>		mMineFieldArray;
 	private int					mMinDim;
 	private int					mCellSize;
 	private MineFieldAdapter	mMineFieldAdapter;
+	private Vibrator			mVibrator;
 
 	private enum PartOfFild {
 		MIDDLE, TOP, BOTTOM, LEFT, RIGHT, CORNER_LEFT_TOP, CORNER_RIGHT_TOP, CORNER_LEFT_BOTTOM, CORNER_RIGHT_BOTTOM
@@ -70,6 +76,8 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 			}
 		});
 		;
+
+		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 	}
 
 	@Override
@@ -77,6 +85,7 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		Cell cell = mMineFieldArray.get(position);
 
 		if (cell.isMine()) {
+			mVibrator.vibrate(VIBRATE_TIME);
 			v.setBackgroundResource(R.drawable.cell_mine);
 			// Game Over
 			showAllMines();
@@ -98,6 +107,7 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
+		mVibrator.vibrate(VIBRATE_TIME);
 
 		Cell cell = mMineFieldArray.get(position);
 
@@ -162,189 +172,12 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 	}
 
 	public int getNumberOfSurroundingMines(Cell cell, int position) {
-		int r = position / mGridSize; //	row
-		int c = position % mGridSize; //	column
-
-		switch (getPartOfFild(r, c)) {
-		case MIDDLE:
-			//	Left Top
-			if (mMineFieldArray.get(position - (mGridSize + 1)).isMine()) {
+		for (int p : getPositionsOfSurroundCells(position)) {
+			if (mMineFieldArray.get(p).isMine()) {
 				cell.incrementSurroundingMines();
 			}
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Top
-			if (mMineFieldArray.get(position - (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//Left Bottom
-			if (mMineFieldArray.get(position + (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Bottom
-			if (mMineFieldArray.get(position + (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case TOP:
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//Left Bottom
-			if (mMineFieldArray.get(position + (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Bottom
-			if (mMineFieldArray.get(position + (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case BOTTOM:
-			//	Left Top
-			if (mMineFieldArray.get(position - (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Top
-			if (mMineFieldArray.get(position - (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case LEFT:
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Top
-			if (mMineFieldArray.get(position - (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Bottom
-			if (mMineFieldArray.get(position + (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case RIGHT:
-			//	Left Top
-			if (mMineFieldArray.get(position - (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//Left Bottom
-			if (mMineFieldArray.get(position + (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case CORNER_LEFT_TOP:
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Bottom
-			if (mMineFieldArray.get(position + (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case CORNER_RIGHT_TOP:
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//Left Bottom
-			if (mMineFieldArray.get(position + (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Bottom
-			if (mMineFieldArray.get(position + mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case CORNER_LEFT_BOTTOM:
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right Top
-			if (mMineFieldArray.get(position - (mGridSize - 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Right
-			if (mMineFieldArray.get(position + 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
-		case CORNER_RIGHT_BOTTOM:
-			//	Left Top
-			if (mMineFieldArray.get(position - (mGridSize + 1)).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Top
-			if (mMineFieldArray.get(position - mGridSize).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			//	Left
-			if (mMineFieldArray.get(position - 1).isMine()) {
-				cell.incrementSurroundingMines();
-			}
-			break;
 		}
+
 		return cell.getSurroundingMines();
 	}
 
@@ -359,8 +192,8 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		setCountOfSurruondMinesToView(v, getNumberOfSurroundingMines(cell, position), position);
 	}
 
-	public void openEmptyCells(int position) {
-		//TODO maybe return array of position and then make cycle for them and run checkIscellEmpty
+	public LinkedList<Integer> getPositionsOfSurroundCells(int position) {
+		LinkedList<Integer> listOfPositions = new LinkedList<Integer>();
 
 		int r = position / mGridSize; //	row
 		int c = position % mGridSize; //	column
@@ -368,104 +201,105 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		switch (getPartOfFild(r, c)) {
 		case MIDDLE:
 			//	Left Top
-			checkIsCellEmpty(position - (mGridSize + 1));
+			listOfPositions.add(position - (mGridSize + 1));
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Right Top
-			checkIsCellEmpty(position - (mGridSize - 1));
+			listOfPositions.add(position - (mGridSize - 1));
 			//	Left
-			checkIsCellEmpty(position - 1);
+			listOfPositions.add(position - 1);
 			//	Right
-			checkIsCellEmpty(position + 1);
-			//Left Bottom
-			checkIsCellEmpty(position + (mGridSize - 1));
+			listOfPositions.add(position + 1);
+			//	Left Bottom
+			listOfPositions.add(position + (mGridSize - 1));
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			//	Right Bottom
-			checkIsCellEmpty(position + (mGridSize + 1));
+			listOfPositions.add(position + (mGridSize + 1));
 			break;
 		case TOP:
 			//	Left
-			checkIsCellEmpty(position - 1);
+			listOfPositions.add(position - 1);
 			//	Right
-			checkIsCellEmpty(position + 1);
-			//Left Bottom
-			checkIsCellEmpty(position + (mGridSize - 1));
+			listOfPositions.add(position + 1);
+			//	Left Bottom
+			listOfPositions.add(position + (mGridSize - 1));
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			//	Right Bottom
-			checkIsCellEmpty(position + (mGridSize + 1));
+			listOfPositions.add(position + (mGridSize + 1));
 			break;
 		case BOTTOM:
 			//	Left Top
-			checkIsCellEmpty(position - (mGridSize + 1));
+			listOfPositions.add(position - (mGridSize + 1));
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Right Top
-			checkIsCellEmpty(position - (mGridSize - 1));
+			listOfPositions.add(position - (mGridSize - 1));
 			//	Left
-			checkIsCellEmpty(position - 1);
+			listOfPositions.add(position - 1);
 			//	Right
-			checkIsCellEmpty(position + 1);
+			listOfPositions.add(position + 1);
 
 			break;
 		case LEFT:
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Right Top
-			checkIsCellEmpty(position - (mGridSize - 1));
+			listOfPositions.add(position - (mGridSize - 1));
 			//	Right
-			checkIsCellEmpty(position + 1);
+			listOfPositions.add(position + 1);
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			//	Right Bottom
-			checkIsCellEmpty(position + (mGridSize + 1));
+			listOfPositions.add(position + (mGridSize + 1));
 			break;
 		case RIGHT:
 			//	Left Top
-			checkIsCellEmpty(position - (mGridSize + 1));
+			listOfPositions.add(position - (mGridSize + 1));
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Left
-			checkIsCellEmpty(position - 1);
-			//Left Bottom
-			checkIsCellEmpty(position + (mGridSize - 1));
+			listOfPositions.add(position - 1);
+			//	Left Bottom
+			listOfPositions.add(position + (mGridSize - 1));
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			break;
 		case CORNER_LEFT_TOP:
 			//	Right
-			checkIsCellEmpty(position + 1);
+			listOfPositions.add(position + 1);
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			//	Right Bottom
-			checkIsCellEmpty(position + (mGridSize + 1));
+			listOfPositions.add(position + (mGridSize + 1));
 			break;
 		case CORNER_RIGHT_TOP:
 			//	Left
-			checkIsCellEmpty(position - 1);
-			//Left Bottom
-			checkIsCellEmpty(position + (mGridSize - 1));
+			listOfPositions.add(position - 1);
+			//	Left Bottom
+			listOfPositions.add(position + (mGridSize - 1));
 			//	Bottom
-			checkIsCellEmpty(position + mGridSize);
+			listOfPositions.add(position + mGridSize);
 			break;
 		case CORNER_LEFT_BOTTOM:
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Right Top
-			checkIsCellEmpty(position - (mGridSize - 1));
+			listOfPositions.add(position - (mGridSize - 1));
 			//	Right
-			checkIsCellEmpty(position + 1);
+			listOfPositions.add(position + 1);
 			break;
 		case CORNER_RIGHT_BOTTOM:
 			//	Left Top
-			checkIsCellEmpty(position - (mGridSize + 1));
+			listOfPositions.add(position - (mGridSize + 1));
 			//	Top
-			checkIsCellEmpty(position - mGridSize);
+			listOfPositions.add(position - mGridSize);
 			//	Left
-			checkIsCellEmpty(position - 1);
+			listOfPositions.add(position - 1);
 			break;
 		}
+		return listOfPositions;
 	}
 
 	public void setCountOfSurruondMinesToView(View v, int count, int position) {
@@ -475,7 +309,12 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		switch (count) {
 		case 0:
 			v.setBackgroundResource(R.drawable.cell_0);
-			openEmptyCells(position);
+
+			//Check if empty cell surround
+			for (int p : getPositionsOfSurroundCells(position)) {
+				checkIsCellEmpty(p);
+			}
+
 			break;
 		case 1:
 			v.setBackgroundResource(R.drawable.cell_1);
@@ -519,16 +358,16 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 	}
 
 	public void showAllMines() {
-		//	TODO Try another way.
+		//TODO Try another way.
 		//	Do changes in adapter and then refresh all gridView adapter.notifyDataChanged();
 
 		Cell cell;
 		for (int i = 0; i < mMineFieldArray.size(); i++) {
 			cell = mMineFieldArray.get(i);
-			if (cell.isMine()) {
+			if (cell.isMine() && !cell.isFlag()) {
 				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_mine);
 			}
-			if (cell.isFlag() && !cell.isMine()) {
+			if (!cell.isMine() && cell.isFlag()) {
 				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_flag_wrong);
 			}
 		}
