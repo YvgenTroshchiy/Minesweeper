@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.Display;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.*;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
@@ -18,6 +19,7 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 	private static final String	TAG			= "myLogs";
 	//TODO make choose from list for count
 	private GridView			vMineField;
+
 	private int					mGridSize	= 8;
 	private int					mCellsCount;
 	private int					mMaxMinsCount;
@@ -26,9 +28,9 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 	private int					mCellSize;
 	private MineFieldAdapter	mMineFieldAdapter;
 
-	private enum PartOfFild { MIDDLE, TOP, BOTTOM, LEFT, RIGHT,
-								CORNER_LEFT_TOP, CORNER_RIGHT_TOP,
-								CORNER_LEFT_BOTTOM, CORNER_RIGHT_BOTTOM };
+	private enum PartOfFild {
+		MIDDLE, TOP, BOTTOM, LEFT, RIGHT, CORNER_LEFT_TOP, CORNER_RIGHT_TOP, CORNER_LEFT_BOTTOM, CORNER_RIGHT_BOTTOM
+	};
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -59,15 +61,15 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		vMineField.setOnItemLongClickListener(this);
 
 		setRandomMines();
-	}
 
-	private void setRandomMines() {
-		Random r = new Random();
-		int minesCount = mMaxMinsCount / 2 + r.nextInt(mMaxMinsCount / 2);
-		for (int i = 0; i < minesCount; i++) {
-			int p = r.nextInt(mCellsCount);
-			mMineFieldArray.get(p).setMine(true);
-		}
+		((Button) findViewById(R.id.btn_resetGame)).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				//TODO Make right reset
+				recreate();
+			}
+		});
+		;
 	}
 
 	@Override
@@ -77,26 +79,93 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		if (cell.isMine()) {
 			v.setBackgroundResource(R.drawable.cell_mine);
 			// Game Over
-			//	TODO Show all mines and wrong flags
+			showAllMines();
 			return;
 		}
-		
-		if (!cell.isEnableForLongClick() || cell.isFlag()) {
+
+		if (cell.isClicked() || !cell.isEnableForLongClick() || cell.isFlag()) {
 			//	We can remove flag only in long click. Just for usability.
 			return;
 		}
 
 		v.setEnabled(false);
-//		v.setClickable(false);
-//		v.setLongClickable(false);
-		cell.enableForLongClick(false);//	v.setLongClickable(false); does not work
+		//		v.setClickable(false);
+		//		v.setLongClickable(false);
+		cell.enableForLongClick(false);//	Because v.setLongClickable(false); does not work
 
-		int row = position / mGridSize;
-		int column = position % mGridSize;
-		//		Log.d(TAG, "r = " + row + ", c = " + column);
-		//		Toast.makeText(this, "r = " + row + ", c = " + column, Toast.LENGTH_SHORT).show();
+		setCountOfSurruondMinesToView(v, getNumberOfSurroundingMines(cell, position), position);
+	}
 
-		switch (getPartOfFild(row, column)) {
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
+
+		Cell cell = mMineFieldArray.get(position);
+
+		if (!cell.isEnableForLongClick() && !cell.isFlag()) {
+			return true;
+		}
+		if (cell.isEnableForLongClick() && cell.getSurroundingMines() > 0) {
+			//TODO highlight surround cells what not now open
+		}
+
+		//	Turn on off flag
+		if (cell.isFlag()) {
+			v.setBackgroundResource(R.drawable.cell_selector);
+			cell.setFlag(false);
+		} else {
+			v.setBackgroundResource(R.drawable.cell_flag);
+			cell.setFlag(true);
+		}
+		return false;
+	}
+
+	public PartOfFild getPartOfFild(int r, int c) {
+		//	Middle part of the Field
+		if ((r != 0) && (r != mGridSize - 1) && (c != 0) && (c != mGridSize - 1)) {
+			return PartOfFild.MIDDLE;
+		}
+		//	Top part of the Field (without corners)
+		if ((r == 0) && (c != 0) && (c != mGridSize - 1)) {
+			return PartOfFild.TOP;
+		}
+		//	Bottom part of the Field (without corners)
+		if ((r == mGridSize - 1) && (c != 0) && (c != mGridSize - 1)) {
+			return PartOfFild.BOTTOM;
+		}
+		//	Left part of the Field (without corners)
+		if ((c == 0) && (r != 0) && (r != mGridSize - 1)) {
+			return PartOfFild.LEFT;
+		}
+		//	Right part of the Field (without corners)
+		if ((c == mGridSize - 1) && (r != 0) && (r != mGridSize - 1)) {
+			return PartOfFild.RIGHT;
+		}
+
+		//	Corners:
+		// Left Top
+		if ((r == 0) && (c == 0)) {
+			return PartOfFild.CORNER_LEFT_TOP;
+		}
+		//	Right Top
+		if ((r == 0) && (c == mGridSize - 1)) {
+			return PartOfFild.CORNER_RIGHT_TOP;
+		}
+		// Left Bottom
+		if ((r == mGridSize - 1) && (c == 0)) {
+			return PartOfFild.CORNER_LEFT_BOTTOM;
+		}
+		//	Right Bottom
+		if ((r == mGridSize - 1) && (c == mGridSize - 1)) {
+			return PartOfFild.CORNER_RIGHT_BOTTOM;
+		}
+		return null;
+	}
+
+	public int getNumberOfSurroundingMines(Cell cell, int position) {
+		int r = position / mGridSize; //	row
+		int c = position % mGridSize; //	column
+
+		switch (getPartOfFild(r, c)) {
 		case MIDDLE:
 			//	Left Top
 			if (mMineFieldArray.get(position - (mGridSize + 1)).isMine()) {
@@ -232,7 +301,6 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 			if (mMineFieldArray.get(position + (mGridSize + 1)).isMine()) {
 				cell.incrementSurroundingMines();
 			}
-
 			break;
 		case CORNER_RIGHT_TOP:
 			//	Left
@@ -277,12 +345,137 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 			}
 			break;
 		}
-		
-		//	TODO remade LayoutInflater in getView and add in him textView
-		switch (cell.getSurroundingMines()) {
+		return cell.getSurroundingMines();
+	}
+
+	private void checkIsCellEmpty(int position) {
+		Cell cell = mMineFieldArray.get(position);
+
+		if (cell.isClicked()) {
+			return;
+		}
+
+		View v = vMineField.getChildAt(position);
+		setCountOfSurruondMinesToView(v, getNumberOfSurroundingMines(cell, position), position);
+	}
+
+	public void openEmptyCells(int position) {
+		//TODO maybe return array of position and then make cycle for them and run checkIscellEmpty
+
+		int r = position / mGridSize; //	row
+		int c = position % mGridSize; //	column
+
+		switch (getPartOfFild(r, c)) {
+		case MIDDLE:
+			//	Left Top
+			checkIsCellEmpty(position - (mGridSize + 1));
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Right Top
+			checkIsCellEmpty(position - (mGridSize - 1));
+			//	Left
+			checkIsCellEmpty(position - 1);
+			//	Right
+			checkIsCellEmpty(position + 1);
+			//Left Bottom
+			checkIsCellEmpty(position + (mGridSize - 1));
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			//	Right Bottom
+			checkIsCellEmpty(position + (mGridSize + 1));
+			break;
+		case TOP:
+			//	Left
+			checkIsCellEmpty(position - 1);
+			//	Right
+			checkIsCellEmpty(position + 1);
+			//Left Bottom
+			checkIsCellEmpty(position + (mGridSize - 1));
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			//	Right Bottom
+			checkIsCellEmpty(position + (mGridSize + 1));
+			break;
+		case BOTTOM:
+			//	Left Top
+			checkIsCellEmpty(position - (mGridSize + 1));
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Right Top
+			checkIsCellEmpty(position - (mGridSize - 1));
+			//	Left
+			checkIsCellEmpty(position - 1);
+			//	Right
+			checkIsCellEmpty(position + 1);
+
+			break;
+		case LEFT:
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Right Top
+			checkIsCellEmpty(position - (mGridSize - 1));
+			//	Right
+			checkIsCellEmpty(position + 1);
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			//	Right Bottom
+			checkIsCellEmpty(position + (mGridSize + 1));
+			break;
+		case RIGHT:
+			//	Left Top
+			checkIsCellEmpty(position - (mGridSize + 1));
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Left
+			checkIsCellEmpty(position - 1);
+			//Left Bottom
+			checkIsCellEmpty(position + (mGridSize - 1));
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			break;
+		case CORNER_LEFT_TOP:
+			//	Right
+			checkIsCellEmpty(position + 1);
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			//	Right Bottom
+			checkIsCellEmpty(position + (mGridSize + 1));
+			break;
+		case CORNER_RIGHT_TOP:
+			//	Left
+			checkIsCellEmpty(position - 1);
+			//Left Bottom
+			checkIsCellEmpty(position + (mGridSize - 1));
+			//	Bottom
+			checkIsCellEmpty(position + mGridSize);
+			break;
+		case CORNER_LEFT_BOTTOM:
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Right Top
+			checkIsCellEmpty(position - (mGridSize - 1));
+			//	Right
+			checkIsCellEmpty(position + 1);
+			break;
+		case CORNER_RIGHT_BOTTOM:
+			//	Left Top
+			checkIsCellEmpty(position - (mGridSize + 1));
+			//	Top
+			checkIsCellEmpty(position - mGridSize);
+			//	Left
+			checkIsCellEmpty(position - 1);
+			break;
+		}
+	}
+
+	public void setCountOfSurruondMinesToView(View v, int count, int position) {
+		mMineFieldArray.get(position).setClicked(true);
+		mMineFieldArray.get(position).enableForLongClick(false);
+
+		switch (count) {
 		case 0:
 			v.setBackgroundResource(R.drawable.cell_0);
-			//TODO Make open method
+			openEmptyCells(position);
 			break;
 		case 1:
 			v.setBackgroundResource(R.drawable.cell_1);
@@ -309,68 +502,36 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 			v.setBackgroundResource(R.drawable.cell_8);
 			break;
 		}
-		
 	}
 
-	public PartOfFild getPartOfFild(int r, int c) {
-		//	Middle part of the Field
-		if ((r != 0) && (r != mGridSize - 1) && (c != 0) && (c != mGridSize - 1)) {
-			return PartOfFild.MIDDLE;
-		}
-		//	Top part of the Field (without corners)
-		if ((r == 0) && (c != 0) && (c != mGridSize - 1)) {
-			return PartOfFild.TOP;
-		}
-		//	Bottom part of the Field (without corners)
-		if ((r == mGridSize - 1) && (c != 0) && (c != mGridSize - 1)) {
-			return PartOfFild.BOTTOM;
-		}
-		//	Left part of the Field (without corners)
-		if ((c == 0) && (r != 0) && (r != mGridSize - 1)) {
-			return PartOfFild.LEFT;
-		}
-		//	Right part of the Field (without corners)
-		if ((c == mGridSize - 1) && (r != 0) && (r != mGridSize - 1)) {
-			return PartOfFild.RIGHT;
-		}
+	private void setRandomMines() {
+		Random r = new Random();
+		//	This is number of mines what need in TZ
+		//		int minesCount = mMaxMinsCount / 2 + r.nextInt(mMaxMinsCount / 2);
 
-		//	Corners:
-		// Left Top
-		if ((r == 0) && (c == 0)) {
-			return PartOfFild.CORNER_LEFT_TOP;
+		//	This is better number of mines for playing
+		int minesCount = mMaxMinsCount / 4 + r.nextInt(mMaxMinsCount / 4);
+
+		for (int i = 0; i < minesCount; i++) {
+			int p = r.nextInt(mCellsCount);
+			mMineFieldArray.get(p).setMine(true);
 		}
-		//	Right Top
-		if ((r == 0) && (c == mGridSize - 1)) {
-			return PartOfFild.CORNER_RIGHT_TOP;
-		}
-		// Left Bottom
-		if ((r == mGridSize - 1) && (c == 0)) {
-			return PartOfFild.CORNER_LEFT_BOTTOM;
-		}
-		//	Right Bottom
-		if ((r == mGridSize - 1) && (c == mGridSize - 1)) {
-			return PartOfFild.CORNER_RIGHT_BOTTOM;
-		}
-		return null;
 	}
 
-	@Override
-	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
-		Cell cell = mMineFieldArray.get(position);
+	public void showAllMines() {
+		//	TODO Try another way.
+		//	Do changes in adapter and then refresh all gridView adapter.notifyDataChanged();
 
-		//TODO For long click make hint for surround cells if they not blank
-
-		if (!cell.isEnableForLongClick() && !cell.isFlag()) {
-			return true;
+		Cell cell;
+		for (int i = 0; i < mMineFieldArray.size(); i++) {
+			cell = mMineFieldArray.get(i);
+			if (cell.isMine()) {
+				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_mine);
+			}
+			if (cell.isFlag() && !cell.isMine()) {
+				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_flag_wrong);
+			}
 		}
-		if (cell.isFlag()) {
-			v.setBackgroundResource(R.drawable.cell_selector);
-			cell.setFlag(false);
-		} else {
-			v.setBackgroundResource(R.drawable.cell_flag);
-			cell.setFlag(true);
-		}
-		return false;
 	}
 
 }

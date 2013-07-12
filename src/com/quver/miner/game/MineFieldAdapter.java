@@ -40,6 +40,8 @@ public class MineFieldAdapter extends BaseAdapter {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
+		//	TODO remade LayoutInflater in getView and add in him textView. TextView.setText/setColor
+		
 		ImageView imageView;
 		if (convertView == null) {
 			imageView = new ImageView(mContext);

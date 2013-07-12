@@ -5,6 +5,7 @@ public class Cell {
 	private int		surroundingMines	= 0;
 	private boolean	isMine				= false;
 	private boolean	isFlag				= false;
+	private boolean	isClicked			= false;
 	private boolean	enableForLongClick	= true;
 
 	public int getSurroundingMines() {
@@ -33,6 +34,14 @@ public class Cell {
 
 	public boolean isEnableForLongClick() {
 		return enableForLongClick;
+	}
+
+	public boolean isClicked() {
+		return isClicked;
+	}
+
+	public void setClicked(boolean isOpen) {
+		this.isClicked = isOpen;
 	}
 
 	public void enableForLongClick(boolean isDisable) {
