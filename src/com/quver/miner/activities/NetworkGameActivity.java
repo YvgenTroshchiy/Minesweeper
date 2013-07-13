@@ -1,4 +1,4 @@
-package com.quver.miner.game;
+package com.quver.miner.activities;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,12 +12,14 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 
 import com.quver.miner.R;
+import com.quver.miner.game.Cell;
+import com.quver.miner.game.MineFieldAdapter;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 
-public class GameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
+public class NetworkGameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
 
 	private static final String	TAG				= "GameActivity";
 
@@ -71,12 +73,14 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		((Button) findViewById(R.id.btn_resetGame)).setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				//TODO Make right reset
+				//TODO Recreate adapter and GridView
 				recreate();
+				//				mMineFieldAdapter.notifyDataSetChanged();
+				//				vMineField.invalidateViews();
+				//				vMineField.setAdapter(mMineFieldAdapter);
 			}
 		});
-		;
-
+		
 		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 	}
 
@@ -85,9 +89,10 @@ public class GameActivity extends Activity implements OnItemClickListener, OnIte
 		Cell cell = mMineFieldArray.get(position);
 
 		if (cell.isMine()) {
-			mVibrator.vibrate(VIBRATE_TIME);
-			v.setBackgroundResource(R.drawable.cell_mine);
 			// Game Over
+			mVibrator.vibrate(VIBRATE_TIME);
+			vMineField.setEnabled(false);
+			v.setBackgroundResource(R.drawable.cell_mine);
 			showAllMines();
 			return;
 		}

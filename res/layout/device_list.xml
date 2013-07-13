@@ -3,14 +3,20 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
+    <Button
+        android:id="@+id/btn_discoverable"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_discoverable" />
+
     <TextView
         android:id="@+id/title_paired_devices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#666"
+        android:background="@color/title_bg"
         android:paddingLeft="5dp"
         android:text="@string/title_paired_devices"
-        android:textColor="#fff"
+        android:textColor="@color/title_color"
         android:visibility="visible" />
 
     <ListView
@@ -24,10 +30,10 @@
         android:id="@+id/title_new_devices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#666"
+        android:background="@color/title_bg"
         android:paddingLeft="5dp"
         android:text="@string/title_other_devices"
-        android:textColor="#fff"
+        android:textColor="@color/title_color"
         android:visibility="visible" />
 
     <ListView
@@ -38,9 +44,9 @@
         android:stackFromBottom="true" />
 
     <Button
-        android:id="@+id/button_scan"
+        android:id="@+id/btn_button_scan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/button_scan" />
+        android:text="@string/btn_scan" />
 
 </LinearLayout>
