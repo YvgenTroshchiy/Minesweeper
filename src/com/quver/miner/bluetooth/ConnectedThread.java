@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import android.bluetooth.BluetoothSocket;
-import android.os.Handler;
 
 public class ConnectedThread extends Thread {
 	public static final int			MESSAGE_READ	= 2;
@@ -13,13 +12,13 @@ public class ConnectedThread extends Thread {
 	private final BluetoothSocket	mSocket;
 	private final InputStream		mInStream;
 	private final OutputStream		mOutStream;
-	private final Handler			mHandler;
+//	private final Handler			mHandler;
 	
-	public ConnectedThread(BluetoothSocket socket, Handler handler) {
+	public ConnectedThread(BluetoothSocket socket) {
 		mSocket = socket;
 		InputStream tmpIn = null;
 		OutputStream tmpOut = null;
-		mHandler = handler;
+//		mHandler = handler;
 		
 		try {
 			tmpIn = socket.getInputStream();
@@ -41,7 +40,7 @@ public class ConnectedThread extends Thread {
 		while (true) {
 			try {
 				bytes = mInStream.read(buffer);
-				mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+//				mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
 			}
 			catch (IOException e) {
 				break;
