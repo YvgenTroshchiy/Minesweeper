@@ -26,7 +26,7 @@ public class MainActivity extends Activity implements OnClickListener {
 				startActivity(new Intent(this, SingleGameActivity.class));
 				break;
 			case R.id.btn_networkGame:
-				startActivity(new Intent(this, DeviceListActivity.class));
+				startActivity(new Intent(this, GameSettings.class));
 				break;
 		}
 	}

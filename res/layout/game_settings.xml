@@ -51,4 +51,13 @@
         android:layout_marginTop="40dp"
         android:text="Start game" />
 
+    <Button
+        android:id="@+id/btn_chooseOponent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/text_opponent"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="26dp"
+        android:text="@string/choose_oponent" />
+
 </RelativeLayout>

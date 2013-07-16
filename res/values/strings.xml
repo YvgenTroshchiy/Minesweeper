@@ -5,6 +5,7 @@
     <string name="action_settings">Settings</string>
     
     <string name="your_opponent">"Your opponent is : "</string>
+    <string name="choose_oponent">"Choose opponent"</string>
     
     <string name="player_type">player type</string>
     <string-array name="player_type">
@@ -24,11 +25,15 @@
     
     <string name="game_rules">Choose player type and grid size</string>
     
-    <!-- ActivityMain -->
     <string name="single_game">Single game</string>
     <string name="network_game">Network game</string>
+    
+    <string name="bt_not_enabled_leaving">Bluetooth was not enabled</string>
+    
+    <string name="title_connecting">connecting...</string>
+    <string name="title_connected_to">connected to</string>
+    <string name="title_not_connected">not connected</string>
 
-    <!-- DeviceListActivity -->
     <string name="select_device">select a device to connect</string>
     <string name="none_paired">No devices have been paired</string>
     <string name="none_found">No devices found</string>
