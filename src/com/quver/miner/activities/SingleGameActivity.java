@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
@@ -16,63 +17,75 @@ import com.quver.miner.game.Cell;
 import com.quver.miner.game.MineFieldAdapter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Random;
 
 public class SingleGameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
-
 	private static final String	TAG				= "GameActivity";
-
+	
+	//TODO make game glass
 	public static final int		VIBRATE_TIME	= 60;
 	//TODO make choose from list for count
 	private GridView			vMineField;
-
+	
+	//TODO
 	private int					mGridSize		= 8;
-	private int					mCellsCount;
 	private int					mMaxMinsCount;
-	private ArrayList<Cell>		mMineFieldArray;
+	private int					mCellsCount;
+	private int					mOpenedCells	= 0;
 	private int					mMinDim;
 	private int					mCellSize;
+	private ArrayList<Cell>		mCellsArray;
+	private HashSet<Integer>	mMinesPosition	= new HashSet<Integer>();
+	private LinkedList<Integer>	mFlagsPosition	= new LinkedList<Integer>();
 	private MineFieldAdapter	mMineFieldAdapter;
 	private Vibrator			mVibrator;
 
 	private enum PartOfFild {
 		MIDDLE, TOP, BOTTOM, LEFT, RIGHT, CORNER_LEFT_TOP, CORNER_RIGHT_TOP, CORNER_LEFT_BOTTOM, CORNER_RIGHT_BOTTOM
 	};
-
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.game_field);
-
+		
 		mCellsCount = mGridSize * mGridSize;
 		mMaxMinsCount = mCellsCount / 2;
-
+		
 		Display display = getWindowManager().getDefaultDisplay();
+		//TODO convert px to dp
 		int width = display.getWidth();
 		int height = display.getHeight();
-
+		
 		mMinDim = Math.min(width, height);
+		//TODO convert px to dp
+		mMinDim -= getResources().getDimension(R.dimen.activity_horizontal_margin);
 		mCellSize = mMinDim / mGridSize;
-
+		
 		vMineField = (GridView) findViewById(R.id.mineField);
 		vMineField.setNumColumns(mGridSize);
-
-		mMineFieldArray = new ArrayList<Cell>(mCellsCount);
+		
+		mCellsArray = new ArrayList<Cell>(mCellsCount);
 		for (int i = 0; i < mCellsCount; i++) {
-			mMineFieldArray.add(new Cell());
+			mCellsArray.add(new Cell());
 		}
-
-		mMineFieldAdapter = new MineFieldAdapter(this, mMineFieldArray, mCellSize);
+		
+		mMineFieldAdapter = new MineFieldAdapter(this, mCellsArray, mCellSize);
 		vMineField.setAdapter(mMineFieldAdapter);
 		vMineField.setOnItemClickListener(this);
 		vMineField.setOnItemLongClickListener(this);
-
+		
 		setRandomMines();
-
-		((Button) findViewById(R.id.btn_resetGame)).setOnClickListener(new OnClickListener() {
+		
+		Button vBtnField = (Button) findViewById(R.id.btn_field);
+		vBtnField.setText(getString(R.string.restart));
+		vBtnField.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				mOpenedCells = 0;
 				//TODO Recreate adapter and GridView
 				recreate();
 				//				mMineFieldAdapter.notifyDataSetChanged();
@@ -80,14 +93,13 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 				//				vMineField.setAdapter(mMineFieldAdapter);
 			}
 		});
-		
 		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 	}
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-		Cell cell = mMineFieldArray.get(position);
-
+		Cell cell = mCellsArray.get(position);
+		
 		if (cell.isMine()) {
 			// Game Over
 			mVibrator.vibrate(VIBRATE_TIME);
@@ -96,42 +108,52 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 			showAllMines();
 			return;
 		}
-
+		
 		if (cell.isClicked() || !cell.isEnableForLongClick() || cell.isFlag()) {
 			//	We can remove flag only in long click. Just for usability.
 			return;
 		}
-
+		
 		v.setEnabled(false);
 		//		v.setClickable(false);
 		//		v.setLongClickable(false);
 		cell.enableForLongClick(false);//	Because v.setLongClickable(false); does not work
-
+		
 		setCountOfSurruondMinesToView(v, getNumberOfSurroundingMines(cell, position), position);
+		isGameOver();
 	}
 
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
 		mVibrator.vibrate(VIBRATE_TIME);
-
-		Cell cell = mMineFieldArray.get(position);
-
-		if (!cell.isEnableForLongClick() && !cell.isFlag()) {
-			return true;
-		}
+		
+		Cell cell = mCellsArray.get(position);
+		
+		if (!cell.isEnableForLongClick() && !cell.isFlag()) { return true; }
 		if (cell.isEnableForLongClick() && cell.getSurroundingMines() > 0) {
 			//TODO highlight surround cells what not now open
 		}
-
+		
 		//	Turn on off flag
 		if (cell.isFlag()) {
 			v.setBackgroundResource(R.drawable.cell_selector);
 			cell.setFlag(false);
+			remooveValueFromFlagPosition(position);
 		} else {
 			v.setBackgroundResource(R.drawable.cell_flag);
 			cell.setFlag(true);
+			mFlagsPosition.add(position);
 		}
 		return false;
+	}
+	
+	private void remooveValueFromFlagPosition(Integer positionToRemoove) {
+		for (Iterator<Integer> i = mFlagsPosition.iterator(); i.hasNext();) {
+			Integer integer = (Integer) i.next();
+			if (integer == positionToRemoove) {
+				i.remove();
+			}
+		}
 	}
 
 	public PartOfFild getPartOfFild(int r, int c) {
@@ -178,7 +200,7 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 
 	public int getNumberOfSurroundingMines(Cell cell, int position) {
 		for (int p : getPositionsOfSurroundCells(position)) {
-			if (mMineFieldArray.get(p).isMine()) {
+			if (mCellsArray.get(p).isMine()) {
 				cell.incrementSurroundingMines();
 			}
 		}
@@ -187,7 +209,7 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 	}
 
 	private void checkIsCellEmpty(int position) {
-		Cell cell = mMineFieldArray.get(position);
+		Cell cell = mCellsArray.get(position);
 
 		if (cell.isClicked()) {
 			return;
@@ -308,18 +330,17 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 	}
 
 	public void setCountOfSurruondMinesToView(View v, int count, int position) {
-		mMineFieldArray.get(position).setClicked(true);
-		mMineFieldArray.get(position).enableForLongClick(false);
-
+		mCellsArray.get(position).setClicked(true);
+		mCellsArray.get(position).enableForLongClick(false);
+		mOpenedCells++;
+		
 		switch (count) {
 		case 0:
 			v.setBackgroundResource(R.drawable.cell_0);
-
 			//Check if empty cell surround
 			for (int p : getPositionsOfSurroundCells(position)) {
 				checkIsCellEmpty(p);
 			}
-
 			break;
 		case 1:
 			v.setBackgroundResource(R.drawable.cell_1);
@@ -346,36 +367,46 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 			v.setBackgroundResource(R.drawable.cell_8);
 			break;
 		}
+		isGameOver();
 	}
 
 	private void setRandomMines() {
 		Random r = new Random();
-		//	This is number of mines what need in TZ
-		//		int minesCount = mMaxMinsCount / 2 + r.nextInt(mMaxMinsCount / 2);
-
-		//	This is better number of mines for playing
 		int minesCount = mMaxMinsCount / 4 + r.nextInt(mMaxMinsCount / 4);
-
+		
+		int position;
 		for (int i = 0; i < minesCount; i++) {
-			int p = r.nextInt(mCellsCount);
-			mMineFieldArray.get(p).setMine(true);
+			position = r.nextInt(mCellsCount);
+			mMinesPosition.add(position);
+			mCellsArray.get(position).setMine(true);
 		}
 	}
 
 	public void showAllMines() {
-		//TODO Try another way.
-		//	Do changes in adapter and then refresh all gridView adapter.notifyDataChanged();
-
 		Cell cell;
-		for (int i = 0; i < mMineFieldArray.size(); i++) {
-			cell = mMineFieldArray.get(i);
-			if (cell.isMine() && !cell.isFlag()) {
-				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_mine);
+		
+		for (Integer position : mMinesPosition) {
+			cell = mCellsArray.get(position);
+			if (!cell.isFlag()) {
+				vMineField.getChildAt(position).setBackgroundResource(R.drawable.cell_mine);
 			}
-			if (!cell.isMine() && cell.isFlag()) {
-				vMineField.getChildAt(i).setBackgroundResource(R.drawable.cell_flag_wrong);
+		}
+		
+		for (Integer position : mFlagsPosition) {
+			cell = mCellsArray.get(position);
+			if (!cell.isMine()) {
+				vMineField.getChildAt(position).setBackgroundResource(R.drawable.cell_flag_wrong);
 			}
 		}
 	}
-
+	
+	public void isGameOver() {
+		if (mCellsCount - mOpenedCells == mMinesPosition.size()) {
+			vMineField.setEnabled(false);
+			Toast toast = Toast.makeText(this, getResources().getString(R.string.win), Toast.LENGTH_SHORT);
+			toast.setGravity(Gravity.CENTER, 0, 0);
+			toast.show();
+		}
+	}
+	
 }

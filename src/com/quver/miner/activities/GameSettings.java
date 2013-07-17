@@ -3,7 +3,6 @@ package com.quver.miner.activities;
 import com.quver.miner.R;
 import com.quver.miner.bluetooth.BluetoothService;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -20,50 +20,73 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class GameSettings extends Activity implements OnClickListener {
-	private static final String	TAG						= "GameSettings";
+	private static final String		TAG						= "GameSettings";
+	
+	//	Constant for intent
+	public final static String		PLAYER_TYPE				= "player_type";
+	public final static String		GRID_SIZE				= "grid_size";
+	
+	public final static String		MINES_ARRAY				= "mines_array";
+	//	Constant for player type
+	public static final int			PLAYER_TYPE_MINER		= 0;
+	public static final int			PLAYER_TYPE_SAPPER		= 1;
+	
+	//	Constant for grid size
+	public static final int			GRID_SIZE_8x8			= 0;
+	public static final int			GRID_SIZE_16x16			= 1;
+	public static final int			GRID_SIZE_32x32			= 2;
+	public static final int			GRID_SIZE_64x64			= 3;
+	public static final int			GRID_SIZE_128x128		= 4;
+	public static final int			GRID_SIZE_256x256		= 5;
 	
 	// Message types sent from the BluetoothChatService Handler
-	public static final int		MESSAGE_STATE_CHANGE	= 1;
-	public static final int		MESSAGE_READ			= 2;
-	public static final int		MESSAGE_WRITE			= 3;
-	public static final int		MESSAGE_DEVICE_NAME		= 4;
-	public static final int		MESSAGE_TOAST			= 5;
+	public static final int			MESSAGE_STATE_CHANGE	= 1;
+	public static final int			MESSAGE_READ			= 2;
+	public static final int			MESSAGE_WRITE			= 3;
+	public static final int			MESSAGE_DEVICE_NAME		= 4;
+	public static final int			MESSAGE_TOAST			= 5;
 	
 	// Key names received from the BluetoothChatService Handler
-	public static final String	DEVICE_NAME				= "device_name";
-	public static final String	TOAST					= "toast";
+	public static final String		DEVICE_NAME				= "device_name";
+	public static final String		TOAST					= "toast";
 	
 	// Intent request codes
-	private static final int	REQUEST_CONNECT_DEVICE	= 2;
-	private static final int	REQUEST_ENABLE_BT		= 3;
+	private static final int		REQUEST_CONNECT_DEVICE	= 2;
+	public static final int			REQUEST_ENABLE_BT		= 3;
+	public final static int			SET_MINES_ARRAY			= 4;
+	public final static int			NETWORK_GAME			= 5;
 	
-	private BluetoothAdapter	mBluetoothAdapter		= null;
-	private BluetoothService	mService				= null;
-	private String				mConnectedDeviceName	= null;
-	private StringBuffer		mOutStringBuffer;
+	private Spinner					vSpinnerPlayerType;
+	private Spinner					vSpinnerGridSize;
+	
+	private int						mPlayerType;
+	private int						mGridSize;
+	
+	private BluetoothAdapter		mBluetoothAdapter		= null;
+	public static BluetoothService	mService				= null;
+	private String					mConnectedDeviceName	= null;
+	private StringBuffer			mOutStringBuffer		= new StringBuffer("");
 	
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-//            case MESSAGE_WRITE:
-//                byte[] writeBuf = (byte[]) msg.obj;
-//                // construct a string from the buffer
-//                String writeMessage = new String(writeBuf);
-//                mConversationArrayAdapter.add("Me:  " + writeMessage);
-//                break;
-//            case MESSAGE_READ:
-//                byte[] readBuf = (byte[]) msg.obj;
-//                // construct a string from the valid bytes in the buffer
-//                String readMessage = new String(readBuf, 0, msg.arg1);
-//                mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
-//                break;
             case MESSAGE_DEVICE_NAME:
                 // save the connected device's name
                 mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
                 Toast.makeText(getApplicationContext(), "Connected to "
                                + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
+			case GameSettings.MESSAGE_READ:
+				//TODO
+				byte[] readBuf = (byte[]) msg.obj;
+				
+				Intent intent = new Intent(GameSettings.this, NetworkGameActivity.class);
+				intent.putExtra(GRID_SIZE, mGridSize);
+				//TODO
+//				intent.putIntegerArrayListExtra(MINES_ARRAY, value);
+				startActivityForResult(intent, NETWORK_GAME);
+				break;
             case MESSAGE_TOAST:
                 Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
                                Toast.LENGTH_SHORT).show();
@@ -89,17 +112,17 @@ public class GameSettings extends Activity implements OnClickListener {
 	public void initializeView() {
 		TextView opponent = (TextView) findViewById(R.id.text_opponent);
 		
-		Button btnChooseOponent = (Button) findViewById(R.id.btn_chooseOponent);
-		btnChooseOponent.setOnClickListener(this);
+		Button vBtnChooseOponent = (Button) findViewById(R.id.btn_chooseOponent);
+		vBtnChooseOponent.setOnClickListener(this);
 		
-		Spinner spinnerPlayerType = (Spinner) findViewById(R.id.spinner_playerType);
-		Spinner spinnerGridSize = (Spinner) findViewById(R.id.spinner_gridSize);
+		vSpinnerPlayerType = (Spinner) findViewById(R.id.spinner_playerType);
+		vSpinnerGridSize = (Spinner) findViewById(R.id.spinner_gridSize);
 		
-		Button btnStartGame = (Button) findViewById(R.id.btn_startGame);
-		btnStartGame.setOnClickListener(this);
+		Button vBtnStartGame = (Button) findViewById(R.id.btn_startGame);
+		vBtnStartGame.setOnClickListener(this);
 		
-		mService = new BluetoothService(this, mHandler);
-        mOutStringBuffer = new StringBuffer("");
+		mService = BluetoothService.getInstance(this, mHandler);
+//        mOutStringBuffer = new StringBuffer("");
 	}
 	
 	@Override
@@ -114,11 +137,13 @@ public class GameSettings extends Activity implements OnClickListener {
 			startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
 			// Otherwise, setup the chat session
 		} else {
-			if (mService == null) initializeView();
+			if (mService == null) {
+				initializeView();
+			}
 		}
 	}
-	
-    @Override
+    
+	@Override
     public synchronized void onResume() {
         super.onResume();
         if (mService != null) {
@@ -127,8 +152,8 @@ public class GameSettings extends Activity implements OnClickListener {
             }
         }
     }
-	
-    @Override
+    
+	@Override
     public synchronized void onPause() {
         super.onPause();
         Log.e(TAG, "- ON PAUSE -");
@@ -140,6 +165,18 @@ public class GameSettings extends Activity implements OnClickListener {
 		if (mService != null) {
 			mService.stop();
 		}
+	}
+	
+	private void sendMessage(Integer[] message) {
+		//TODO
+		if (mService.getState() != BluetoothService.STATE_CONNECTED) {
+			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+			return;
+		}
+		
+//			byte[] send = message.;
+//			mService.write(send);
+			mOutStringBuffer.setLength(0);
 	}
 	
 	@Override
@@ -161,6 +198,11 @@ public class GameSettings extends Activity implements OnClickListener {
 					Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
 					finish();
 				}
+			case SET_MINES_ARRAY:
+				//TODO
+				Toast.makeText(this, getResources().getString(R.string.waiting_for_the_game_result), Toast.LENGTH_LONG).show();
+				//				sendMessage(data.getIntArrayExtra(MINES_ARRAY));
+				break;
 		}
 	}
 	
@@ -177,8 +219,47 @@ public class GameSettings extends Activity implements OnClickListener {
 				// Launch the DeviceListActivity to see devices and do scan
 				startActivityForResult(new Intent(this, DeviceListActivity.class), REQUEST_CONNECT_DEVICE);
 				break;
+			case R.id.btn_startGame:
+				
+				switch (vSpinnerPlayerType.getSelectedItemPosition()) {
+					case PLAYER_TYPE_MINER:
+						mPlayerType = PLAYER_TYPE_MINER;
+						break;
+					case PLAYER_TYPE_SAPPER:
+						mPlayerType = PLAYER_TYPE_SAPPER;
+						
+						Toast toast = Toast.makeText(this, getResources().getString(R.string.wait_until_set_mines), Toast.LENGTH_LONG);
+						toast.setGravity(Gravity.CENTER, 0, 0);
+						toast.show();
+						break;
+				}
+				
+				switch (vSpinnerGridSize.getSelectedItemPosition()) {
+					case GRID_SIZE_8x8:
+						mGridSize = 8;
+						break;
+					case GRID_SIZE_16x16:
+						mGridSize = 16;
+						break;
+					case GRID_SIZE_32x32:
+						mGridSize = 32;
+						break;
+					case GRID_SIZE_64x64:
+						mGridSize = 64;
+						break;
+					case GRID_SIZE_128x128:
+						mGridSize = 128;
+						break;
+					case GRID_SIZE_256x256:
+						mGridSize = 256;
+						break;
+				}
+				
+				Intent intent = new Intent(this, SetMines.class);
+				intent.putExtra(GRID_SIZE, mGridSize);
+				startActivityForResult(intent, SET_MINES_ARRAY);
+				break;
 		}
-		
 	}
 	
 }

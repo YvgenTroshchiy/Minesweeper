@@ -16,7 +16,6 @@ import java.io.OutputStream;
 import java.util.UUID;
 
 import com.quver.miner.activities.GameSettings;
-import com.quver.miner.activities.NetworkGameActivity;
 
 public class BluetoothService {
 	private static final String		TAG					= "BluetoothService";
@@ -35,21 +34,37 @@ public class BluetoothService {
 	
 	private int						mState;
 	private final BluetoothAdapter	mAdapter;
-	private final Handler			mHandler;
+	//TODO make listener instead of handler 
+	private Handler					mHandler;
 	private AcceptThread			mAcceptThread;
 	private ConnectThread			mConnectThread;
 	private ConnectedThread			mConnectedThread;
+	
+	private static BluetoothService	mBluetoothService;
 	
     /**
      * Constructor. Prepares a new BluetoothChat session.
      * @param context  The UI Activity Context
      * @param handler  A Handler to send messages back to the UI Activity
      */
-    public BluetoothService(Context context, Handler handler) {
+    private BluetoothService(Context context, Handler handler) {
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
 		mHandler = handler;
     }
+    
+	public static BluetoothService getInstance(Context context, Handler handler) {
+		if (mBluetoothService == null) {
+			mBluetoothService = new BluetoothService(context, handler);
+		}
+		return mBluetoothService;
+	}
+	
+	public void setHandler(Handler h) {
+		synchronized (this) {
+			mHandler = h;
+		}
+	}
     
 	/**
 	 * Set the current state of the chat connection
@@ -60,7 +75,7 @@ public class BluetoothService {
 		mState = state;
 
 		// Give the new state to the Handler so the UI Activity can update
-		mHandler.obtainMessage(NetworkGameActivity.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+		mHandler.obtainMessage(GameSettings.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
 	}
 
     /**
@@ -149,9 +164,9 @@ public class BluetoothService {
 		mConnectedThread.start();
 
 		// Send the name of the connected device back to the UI Activity
-		Message msg = mHandler.obtainMessage(NetworkGameActivity.MESSAGE_DEVICE_NAME);
+		Message msg = mHandler.obtainMessage(GameSettings.MESSAGE_DEVICE_NAME);
 		Bundle bundle = new Bundle();
-		bundle.putString(NetworkGameActivity.DEVICE_NAME, device.getName());
+		bundle.putString(GameSettings.DEVICE_NAME, device.getName());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
@@ -203,9 +218,9 @@ public class BluetoothService {
      */
     private void connectionFailed() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(NetworkGameActivity.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(GameSettings.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(NetworkGameActivity.TOAST, "Unable to connect device");
+        bundle.putString(GameSettings.TOAST, "Unable to connect device");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -218,9 +233,9 @@ public class BluetoothService {
      */
     private void connectionLost() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(NetworkGameActivity.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(GameSettings.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(NetworkGameActivity.TOAST, "Device connection was lost");
+        bundle.putString(GameSettings.TOAST, "Device connection was lost");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -404,7 +419,7 @@ public class BluetoothService {
 					bytes = mInStream.read(buffer);
 
 					// Send the obtained bytes to the UI Activity
-					mHandler.obtainMessage(NetworkGameActivity.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+					mHandler.obtainMessage(GameSettings.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
 				} catch (IOException e) {
 					Log.e(TAG, "disconnected", e);
 					connectionLost();
