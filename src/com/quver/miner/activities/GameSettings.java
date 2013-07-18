@@ -1,7 +1,17 @@
 package com.quver.miner.activities;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.StreamCorruptedException;
+import java.util.ArrayList;
+
 import com.quver.miner.R;
 import com.quver.miner.bluetooth.BluetoothService;
+import com.quver.miner.bluetooth.DataSerializable;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -25,6 +35,7 @@ public class GameSettings extends Activity implements OnClickListener {
 	//	Constant for intent
 	public final static String		PLAYER_TYPE				= "player_type";
 	public final static String		GRID_SIZE				= "grid_size";
+	public final static String		GAME_RESULT_IS_WIN		= "game_result";
 	
 	public final static String		MINES_ARRAY				= "mines_array";
 	//	Constant for player type
@@ -65,38 +76,79 @@ public class GameSettings extends Activity implements OnClickListener {
 	private BluetoothAdapter		mBluetoothAdapter		= null;
 	public static BluetoothService	mService				= null;
 	private String					mConnectedDeviceName	= null;
-	private StringBuffer			mOutStringBuffer		= new StringBuffer("");
 	
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-            case MESSAGE_DEVICE_NAME:
-                // save the connected device's name
-                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                Toast.makeText(getApplicationContext(), "Connected to "
-                               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-                break;
-			case GameSettings.MESSAGE_READ:
-				//TODO
-				byte[] readBuf = (byte[]) msg.obj;
-				
-				Intent intent = new Intent(GameSettings.this, NetworkGameActivity.class);
-				intent.putExtra(GRID_SIZE, mGridSize);
-				//TODO
-//				intent.putIntegerArrayListExtra(MINES_ARRAY, value);
-				startActivityForResult(intent, NETWORK_GAME);
-				break;
-            case MESSAGE_TOAST:
-                Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
-                               Toast.LENGTH_SHORT).show();
-                break;
-            }
-        }
-    };
+	private final Handler mHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+				case MESSAGE_DEVICE_NAME:
+					// save the connected device's name
+					mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+					Toast.makeText(getApplicationContext(), "Connected to " + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+					break;
+				case GameSettings.MESSAGE_READ:
+					byte[] readBuf = (byte[]) msg.obj;
+					DataSerializable dataSerializable = null;
+					ByteArrayInputStream bis = new ByteArrayInputStream(readBuf);
+					ObjectInput in = null;
+					
+					try {
+						in = new ObjectInputStream(bis);
+						dataSerializable = (DataSerializable) in.readObject();
+					}
+					catch (StreamCorruptedException e) {
+						e.printStackTrace();
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+					catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
+					finally {
+						try {
+							bis.close();
+							in.close();
+						}
+						catch (IOException e) {
+							e.printStackTrace();
+						}
+						
+					}
+					
+					Boolean isWin = dataSerializable.isWin();
+					if (isWin != null) {
+						//TODO make class for centered toas or something else for game result information.
+						Toast toast = null;
+						if (isWin) {
+							toast = Toast.makeText(GameSettings.this, getResources().getString(R.string.you_win), Toast.LENGTH_LONG);
+						} else {
+							toast = Toast.makeText(GameSettings.this, getResources().getString(R.string.you_lose), Toast.LENGTH_LONG);
+						}
+						toast.setGravity(Gravity.CENTER, 0, 0);
+						toast.show();
+					} else {
+						ArrayList<Integer> arrayListMinesPositions = new ArrayList<Integer>();
+						int[] minesPosition = dataSerializable.getMinesPosition();
+						for (int i = 0; i < minesPosition.length; i++) {
+							arrayListMinesPositions.add(minesPosition[i]);
+						}
+						
+						Intent intent = new Intent(GameSettings.this, NetworkGameActivity.class);
+						intent.putExtra(GRID_SIZE, dataSerializable.getGridSize());
+						intent.putIntegerArrayListExtra(MINES_ARRAY, arrayListMinesPositions);
+						startActivityForResult(intent, NETWORK_GAME);
+					}
+					break;
+				case MESSAGE_TOAST:
+					Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST), Toast.LENGTH_SHORT).show();
+					break;
+			}
+		}
+	};
+	
 	
 	@Override
-	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.game_settings);
@@ -122,7 +174,6 @@ public class GameSettings extends Activity implements OnClickListener {
 		vBtnStartGame.setOnClickListener(this);
 		
 		mService = BluetoothService.getInstance(this, mHandler);
-//        mOutStringBuffer = new StringBuffer("");
 	}
 	
 	@Override
@@ -167,18 +218,6 @@ public class GameSettings extends Activity implements OnClickListener {
 		}
 	}
 	
-	private void sendMessage(Integer[] message) {
-		//TODO
-		if (mService.getState() != BluetoothService.STATE_CONNECTED) {
-			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
-			return;
-		}
-		
-//			byte[] send = message.;
-//			mService.write(send);
-			mOutStringBuffer.setLength(0);
-	}
-	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		Log.d(TAG, "onActivityResult " + resultCode);
@@ -199,10 +238,55 @@ public class GameSettings extends Activity implements OnClickListener {
 					finish();
 				}
 			case SET_MINES_ARRAY:
-				//TODO
 				Toast.makeText(this, getResources().getString(R.string.waiting_for_the_game_result), Toast.LENGTH_LONG).show();
-				//				sendMessage(data.getIntArrayExtra(MINES_ARRAY));
+				DataSerializable dataSerializable = new DataSerializable(mGridSize, data.getIntArrayExtra(MINES_ARRAY));
+				
+				sendSerializebaleData(dataSerializable);
 				break;
+			case NETWORK_GAME:
+				Toast toast = null;
+				if (data.getBooleanExtra(GAME_RESULT_IS_WIN, false)) {
+					toast = Toast.makeText(this, getResources().getString(R.string.you_win), Toast.LENGTH_SHORT);
+					dataSerializable =  new DataSerializable(false);
+				} else {
+					toast = Toast.makeText(this, getResources().getString(R.string.you_lose), Toast.LENGTH_SHORT);
+					dataSerializable =  new DataSerializable(true);
+				}
+				toast.setGravity(Gravity.CENTER, 0, 0);
+				toast.show();
+				
+				sendSerializebaleData(dataSerializable);
+				break;
+		}
+	}
+	
+	public void sendSerializebaleData(DataSerializable data){
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream out = null;
+		
+		try {
+			out = new ObjectOutputStream(bos);
+			out.writeObject(data);
+			byte[] sendData = bos.toByteArray();
+			
+			if (mService.getState() != BluetoothService.STATE_CONNECTED) {
+				Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+				return;
+			}
+			
+			mService.write(sendData);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				out.close();
+				bos.close();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -220,6 +304,13 @@ public class GameSettings extends Activity implements OnClickListener {
 				startActivityForResult(new Intent(this, DeviceListActivity.class), REQUEST_CONNECT_DEVICE);
 				break;
 			case R.id.btn_startGame:
+				
+				if (mService.getState() != BluetoothService.STATE_CONNECTED) {
+					Toast toast = Toast.makeText(this, getResources().getString(R.string.not_connected), Toast.LENGTH_LONG);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					return;
+				}
 				
 				switch (vSpinnerPlayerType.getSelectedItemPosition()) {
 					case PLAYER_TYPE_MINER:

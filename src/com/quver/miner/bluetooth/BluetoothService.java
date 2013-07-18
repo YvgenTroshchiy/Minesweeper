@@ -12,6 +12,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
@@ -198,7 +199,7 @@ public class BluetoothService {
 	
     /**
      * Write to the ConnectedThread in an unsynchronized manner
-     * @param out The bytes to write
+     * @param oos The bytes to write
      * @see ConnectedThread#write(byte[])
      */
     public void write(byte[] out) {
@@ -417,7 +418,6 @@ public class BluetoothService {
 				try {
 					// Read from the InputStream
 					bytes = mInStream.read(buffer);
-
 					// Send the obtained bytes to the UI Activity
 					mHandler.obtainMessage(GameSettings.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
 				} catch (IOException e) {
@@ -432,27 +432,28 @@ public class BluetoothService {
 
 		/**
 		 * Call this from the main activity to send data to the remote device
-		 * @param buffer The bytes to write
+		 * @param oos
+		 *            The bytes to write
 		 */
 		public void write(byte[] buffer) {
 			try {
 				mOutStream.write(buffer);
-				// Share the sent message back to the UI Activity
 				mHandler.obtainMessage(GameSettings.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
 			}
 			catch (IOException e) {
 				Log.e(TAG, "Exception during write", e);
 			}
 		}
-
+		
 		public void cancel() {
 			try {
 				mSocket.close();
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				Log.d(TAG, "close() of connect socket failed", e);
 			}
 		}
-
+		
 	}
-
+	
 }

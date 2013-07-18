@@ -21,7 +21,7 @@ public class SetMines extends Activity implements OnItemClickListener {
 	private GridView			vMineField;
 	private int					mGridSize;
 	private ArrayList<Cell>		mCellsArray;
-	private ArrayList<Integer>	minesPosition	= new ArrayList<Integer>();
+	private ArrayList<Integer>	mMinesPosition	= new ArrayList<Integer>();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -36,16 +36,16 @@ public class SetMines extends Activity implements OnItemClickListener {
 		vBtnField.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (minesPosition.size() >= mGridSize * mGridSize / 2) {
+				if (mMinesPosition.size() >= mGridSize * mGridSize / 2) {
 					Toast.makeText(SetMines.this, getResources().getString(R.string.Number_of_mines_shood_be), Toast.LENGTH_LONG).show();
 					return;
 				}
-				if (minesPosition.size() == 0) {
+				if (mMinesPosition.size() == 0) {
 					Toast.makeText(SetMines.this, getResources().getString(R.string.you_dont_set_mines), Toast.LENGTH_LONG).show();
 					return;
 				}
 				Intent intent = new Intent();
-				intent.putIntegerArrayListExtra(GameSettings.MINES_ARRAY, minesPosition);
+				intent.putIntegerArrayListExtra(GameSettings.MINES_ARRAY, mMinesPosition);
 				setResult(RESULT_OK, intent);
 				finish();
 			}
@@ -74,7 +74,7 @@ public class SetMines extends Activity implements OnItemClickListener {
 	}
 	
 	private void remooveValueFromminesPosition(Integer positionToRemoove) {
-		for (Iterator<Integer> i = minesPosition.iterator(); i.hasNext();) {
+		for (Iterator<Integer> i = mMinesPosition.iterator(); i.hasNext();) {
 			Integer integer = (Integer) i.next();
 			if (integer == positionToRemoove) {
 				i.remove();
@@ -93,7 +93,7 @@ public class SetMines extends Activity implements OnItemClickListener {
 		} else {
 			v.setBackgroundResource(R.drawable.cell_mine);
 			cell.setMine(true);
-			minesPosition.add(position);
+			mMinesPosition.add(position);
 		}
 	}
 	

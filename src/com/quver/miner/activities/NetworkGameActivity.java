@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.view.Display;
-import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
@@ -18,10 +17,8 @@ import com.quver.miner.game.Cell;
 import com.quver.miner.game.MineFieldAdapter;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Random;
 
 public class NetworkGameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
 	private static final String	TAG				= "GameActivity";
@@ -108,6 +105,11 @@ public class NetworkGameActivity extends Activity implements OnItemClickListener
 			vMineField.setEnabled(false);
 			v.setBackgroundResource(R.drawable.cell_mine);
 			showAllMines();
+			
+			Intent intent = new Intent();
+			intent.putExtra(GameSettings.GAME_RESULT_IS_WIN, false);
+			setResult(RESULT_OK,intent);
+			finish();
 			return;
 		}
 		
@@ -399,11 +401,11 @@ public class NetworkGameActivity extends Activity implements OnItemClickListener
 	public void isGameOver() {
 		if (mCellsCount - mOpenedCells == mMinesPosition.size()) {
 			vMineField.setEnabled(false);
-			Toast toast = Toast.makeText(this, getResources().getString(R.string.win), Toast.LENGTH_SHORT);
-			toast.setGravity(Gravity.CENTER, 0, 0);
-			toast.show();
 			
-			//TODO send message via bluetooth
+			Intent intent = new Intent();
+			intent.putExtra(GameSettings.GAME_RESULT_IS_WIN, true);
+			setResult(RESULT_OK,intent);
+			finish();
 		}
 	}
 	

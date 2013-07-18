@@ -47,7 +47,8 @@
     <string name="title_paired_devices">Paired Devices</string>
     <string name="title_other_devices">Other Available Devices</string>
     
-    <string name="win">Congratulations you win!</string>
+    <string name="you_win">Congratulations you win!</string>
+    <string name="you_lose">You Lose!</string>
      
     <string name="btn_scan">Scan for devices</string>
     <string name="btn_discoverable">Display for other devices</string>

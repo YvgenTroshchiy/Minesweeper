@@ -403,7 +403,7 @@ public class SingleGameActivity extends Activity implements OnItemClickListener,
 	public void isGameOver() {
 		if (mCellsCount - mOpenedCells == mMinesPosition.size()) {
 			vMineField.setEnabled(false);
-			Toast toast = Toast.makeText(this, getResources().getString(R.string.win), Toast.LENGTH_SHORT);
+			Toast toast = Toast.makeText(this, getResources().getString(R.string.you_win), Toast.LENGTH_SHORT);
 			toast.setGravity(Gravity.CENTER, 0, 0);
 			toast.show();
 		}
