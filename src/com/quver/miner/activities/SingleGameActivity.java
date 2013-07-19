@@ -25,12 +25,11 @@ import java.util.Random;
 public class SingleGameActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
 	private static final String	TAG				= "GameActivity";
 	
-	//TODO make game glass
+	//TODO make game Class
 	public static final int		VIBRATE_TIME	= 60;
 	//TODO make choose from list for count
 	private GridView			vMineField;
 	
-	//TODO
 	private int					mGridSize		= 8;
 	private int					mMaxMinsCount;
 	private int					mCellsCount;
